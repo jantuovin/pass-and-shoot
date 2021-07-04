@@ -1,0 +1,59 @@
+Welcome to play Pass and Shoot!
+
+Commands:
+    help: print this help
+    new: start a new game
+    pass [PLAYER]: try pass the ball to player
+    shoot: shoot towards the opponents goal
+    stats [PLAYER]: show player stats
+    events [ROWS]: show events
+    field: show field
+    quit: quit the program
+
+Enter command: new
+
+
+[00:00] The game starts. The Situation is B 00 - R 00. B-GK has the ball.
+ ___________        ___________
+|             R-GK             |
+|                              |  
+|       R-RD        R-LD       |
+|                              |
+|     B-LF            B-RF     |
+|                              |
+|             R-MF             |
+|                              |
+|------------------------------|
+|                              |  
+|             B-MF             |
+|                              |
+|     R-RF             R-LF    |
+|                              |
+|       B-LD        B-RD       |
+|                              |
+|___________  B-GK  ___________|
+
+Enter command: pass B-RD
+
+[00:00] The game starts. The Situation is B 00 - R 00. B-GK has the ball.
+[01:00] B-GK passes the ball to B-BD. The Situation is B 00 - R 00. B-RD has the ball.
+ ___________        ___________
+|             R-GK             |
+|                              |  
+|       R-RD        R-LD       |
+|                              |
+|     B-LF            B-RF     |
+|                              |
+|             R-MF             |
+|                              |
+|------------------------------|
+|                              |  
+|             B-MF             |
+|                              |
+|     R-RF             R-LF    |
+|                              |
+|       B-LD        B-RD*      |
+|                              |
+|___________  B-GK  ___________|
+
+Enter command:
