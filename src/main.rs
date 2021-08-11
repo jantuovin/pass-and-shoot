@@ -100,6 +100,7 @@ mod game_play {
 }
 
 mod core {
+    use rand::Rng;
     use std::collections::HashMap;
 
     pub mod player_name {
@@ -111,7 +112,7 @@ mod core {
         pub const R_RF: &str = "R_RF";
         pub const B_GK: &str = "B_GK";
         pub const B_LD: &str = "B_LD";
-        pub const B_RD: &str = "B_RF";
+        pub const B_RD: &str = "B_RD";
         pub const B_MF: &str = "B_MF";
         pub const B_LF: &str = "B_LF";
         pub const B_RF: &str = "B_RF";
@@ -123,8 +124,22 @@ mod core {
     }
 
     #[derive(Debug)]
-    pub struct PlayerInfo {
-        // TODO
+    pub struct Player {
+        pub name: String,
+        pub team: String,
+        pub pos_x_axis: u8,
+        pub pos_y_axis: u8,
+    }
+
+    impl Player {
+        pub fn parse(name: String, team: String, pos_x_axis: u8, pos_y_axis: u8) -> Player {
+            Player {
+                name,
+                team,
+                pos_x_axis,
+                pos_y_axis,
+            }
+        }
     }
 
     #[derive(Debug)]
@@ -135,9 +150,9 @@ mod core {
 
     #[derive(Debug)]
     pub struct Game {
-        pub players: HashMap<String, PlayerInfo>,
+        pub players: HashMap<String, Player>,
         pub goals: HashMap<String, u8>,
-        pub player_with_ball: String,
+        pub name_of_player_with_ball: String,
         pub events: Vec<Event>,
         pub round: u8,
     }
@@ -146,102 +161,250 @@ mod core {
         pub fn new() -> Game {
             let mut players = HashMap::new();
             // Red team
-            players.insert(player_name::R_GK.to_string(), PlayerInfo {});
-            players.insert(player_name::R_LD.to_string(), PlayerInfo {});
-            players.insert(player_name::R_RD.to_string(), PlayerInfo {});
-            players.insert(player_name::R_MF.to_string(), PlayerInfo {});
-            players.insert(player_name::R_LF.to_string(), PlayerInfo {});
-            players.insert(player_name::R_RF.to_string(), PlayerInfo {});
+            players.insert(
+                player_name::R_GK.to_string(),
+                Player::parse(
+                    player_name::R_GK.to_string(),
+                    team_name::R.to_string(),
+                    1,
+                    0,
+                ),
+            );
+            players.insert(
+                player_name::R_RD.to_string(),
+                Player::parse(
+                    player_name::R_RD.to_string(),
+                    team_name::R.to_string(),
+                    0,
+                    1,
+                ),
+            );
+            players.insert(
+                player_name::R_LD.to_string(),
+                Player::parse(
+                    player_name::R_RD.to_string(),
+                    team_name::R.to_string(),
+                    2,
+                    1,
+                ),
+            );
+            players.insert(
+                player_name::R_MF.to_string(),
+                Player::parse(
+                    player_name::R_RD.to_string(),
+                    team_name::R.to_string(),
+                    1,
+                    3,
+                ),
+            );
+            players.insert(
+                player_name::R_RF.to_string(),
+                Player::parse(
+                    player_name::R_RD.to_string(),
+                    team_name::R.to_string(),
+                    0,
+                    5,
+                ),
+            );
+            players.insert(
+                player_name::R_LF.to_string(),
+                Player::parse(
+                    player_name::R_RD.to_string(),
+                    team_name::R.to_string(),
+                    2,
+                    5,
+                ),
+            );
 
             // Blue team
-            players.insert(player_name::B_GK.to_string(), PlayerInfo {});
-            players.insert(player_name::B_LD.to_string(), PlayerInfo {});
-            players.insert(player_name::B_RD.to_string(), PlayerInfo {});
-            players.insert(player_name::B_MF.to_string(), PlayerInfo {});
-            players.insert(player_name::B_LF.to_string(), PlayerInfo {});
-            players.insert(player_name::B_RF.to_string(), PlayerInfo {});
+            players.insert(
+                player_name::B_GK.to_string(),
+                Player::parse(
+                    player_name::B_GK.to_string(),
+                    team_name::B.to_string(),
+                    1,
+                    7,
+                ),
+            );
+            players.insert(
+                player_name::B_LD.to_string(),
+                Player::parse(
+                    player_name::B_LD.to_string(),
+                    team_name::B.to_string(),
+                    0,
+                    6,
+                ),
+            );
+            players.insert(
+                player_name::B_RD.to_string(),
+                Player::parse(
+                    player_name::B_RD.to_string(),
+                    team_name::B.to_string(),
+                    2,
+                    6,
+                ),
+            );
+            players.insert(
+                player_name::B_MF.to_string(),
+                Player::parse(
+                    player_name::B_MF.to_string(),
+                    team_name::B.to_string(),
+                    1,
+                    4,
+                ),
+            );
+            players.insert(
+                player_name::B_LF.to_string(),
+                Player::parse(
+                    player_name::B_LF.to_string(),
+                    team_name::B.to_string(),
+                    0,
+                    2,
+                ),
+            );
+            players.insert(
+                player_name::B_RF.to_string(),
+                Player::parse(
+                    player_name::B_RF.to_string(),
+                    team_name::B.to_string(),
+                    2,
+                    2,
+                ),
+            );
 
             let mut goals = HashMap::new();
             goals.insert(team_name::R.to_string(), 0);
             goals.insert(team_name::B.to_string(), 0);
 
-            let events: Vec<Event> = vec![Event {
-                timestamp: String::from("0:00"),
-                description: String::from(
-                    "The game starts. The Situation is B 00 - R 00. B-GK has the ball.",
-                ),
-            }];
+            let events: Vec<Event> = vec![Game::create_event(
+                String::from("0:00"),
+                String::from("The game starts. The Situation is B 00 - R 00. B-GK has the ball."),
+            )];
 
             Game {
                 players,
                 goals,
-                player_with_ball: player_name::B_GK.to_string(),
+                name_of_player_with_ball: player_name::B_GK.to_string(),
                 events,
                 round: 1,
             }
         }
 
         pub fn pass_ball_to(&mut self, player: &Option<String>) -> Result<(), String> {
-            let player_str;
-            match player {
-                Some(p) => player_str = p.to_string(),
-                _ => player_str = "".to_string(),
+            let receiving_player_name = match player {
+                Some(p) => p.to_string(),
+                _ => return Err("Player argument not found".to_string()),
+            };
+
+            let passing_player = match self.players.get(&self.name_of_player_with_ball) {
+                Some(p) => p,
+                _ => return Err("Passing player not found".to_string()),
+            };
+
+            let receiving_player = match self.players.get(&receiving_player_name) {
+                Some(p) => p,
+                _ => return Err("Pass receiving player not found".to_string()),
+            };
+
+            let mut interrupting_player: Option<&Player> = None;
+            for player in self.players.values() {
+                if passing_player.team == player.team {
+                    continue;
+                }
+
+                let distance_to_passing_player =
+                    Game::distance_between_players(&passing_player, &player);
+                let distance_to_receiving_player =
+                    Game::distance_between_players(&receiving_player, &player);
+
+                if Game::is_pass_interrupted(distance_to_passing_player)
+                    || Game::is_pass_interrupted(distance_to_receiving_player)
+                {
+                    interrupting_player = Some(player);
+                }
             }
 
-            let player_exits = self.players.keys().any(|k| k == &player_str);
-            if !player_exits {
-                return Err("Player not found".to_string());
+            match interrupting_player {
+                None => {
+                    self.events.push(Game::create_event(
+                        format!("{}:00", self.round),
+                        format!(
+                            "{} passes the ball to {}.",
+                            self.name_of_player_with_ball, receiving_player_name
+                        ),
+                    ));
+                    self.name_of_player_with_ball = receiving_player_name;
+                }
+                Some(p) => {
+                    self.events.push(Game::create_event(
+                        format!("{}:00", self.round),
+                        format!("{} interrupts the pass.", p.name),
+                    ));
+                    self.name_of_player_with_ball = p.name.clone();
+                }
             }
 
-            self.events.push(Event {
-                timestamp: format!("{}:00", self.round),
-                description: format!(
-                    "{} passes the ball to {}.",
-                    self.player_with_ball, player_str
-                ),
-            });
-
-            self.player_with_ball = player_str;
             self.round += 1;
             Ok(())
         }
 
         pub fn shoot_ball_to(&mut self, teams_goal: &Option<String>) -> Result<(), String> {
-            let team;
-            match teams_goal {
-                Some(p) => team = p.to_string(),
-                _ => team = "".to_string(),
-            }
+            let team_name = match teams_goal {
+                Some(p) => p.to_string(),
+                _ => return Err("Team argument not found".to_string()),
+            };
 
-            let team_exists = self.goals.keys().any(|k| k == &team);
-            if !team_exists {
-                return Err("Team not found".to_string());
-            }
+            let shooting_player = match self.players.get(&self.name_of_player_with_ball) {
+                Some(p) => p,
+                _ => return Err("Shooting player not found".to_string()),
+            };
 
-            if team == team_name::R {
-                *self.goals.get_mut(team_name::B).unwrap() += 1;
+            let goalkeeper_name = match team_name.as_str() {
+                team_name::R => player_name::R_GK,
+                team_name::B => player_name::B_GK,
+                _ => return Err("Team name not valid".to_string()),
+            };
+
+            let team_goalkeeper = match self.players.get(goalkeeper_name) {
+                Some(gk) => gk,
+                _ => return Err("Goalkeeper not found".to_string()),
+            };
+
+            if Game::does_shot_get_to_goal(Game::distance_between_players(
+                &shooting_player,
+                &team_goalkeeper,
+            )) {
+                match team_name.as_str() {
+                    team_name::R => *self.goals.get_mut(team_name::B).unwrap() += 1,
+                    _ => *self.goals.get_mut(team_name::R).unwrap() += 1,
+                }
+
+                self.events.push(Game::create_event(
+                    format!("{}:00", self.round),
+                    format!(
+                        "{} scores! The Situation is B {} - R {}.",
+                        self.name_of_player_with_ball,
+                        self.goals[team_name::B],
+                        self.goals[team_name::R]
+                    ),
+                ));
             } else {
-                *self.goals.get_mut(team_name::R).unwrap() += 1;
+                self.events.push(Game::create_event(
+                    format!("{}:00", self.round),
+                    format!(
+                        "{} fails to score. The Situation is still B {} - R {}.",
+                        self.name_of_player_with_ball,
+                        self.goals[team_name::B],
+                        self.goals[team_name::R]
+                    ),
+                ));
             }
 
-            self.events.push(Event {
-                timestamp: format!("{}:00", self.round),
-                description: format!(
-                    "{} scores! The Situation is B {} - R {}.",
-                    self.player_with_ball,
-                    self.goals[team_name::B],
-                    self.goals[team_name::R]
-                ),
-            });
-
-            match team.as_str() {
-                team_name::R => {
-                    self.player_with_ball = player_name::R_GK.to_string();
-                }
-                _ => {
-                    self.player_with_ball = player_name::B_GK.to_string();
-                }
+            match team_name.as_str() {
+                team_name::R => self.name_of_player_with_ball = player_name::R_GK.to_string(),
+                _ => self.name_of_player_with_ball = player_name::B_GK.to_string(),
             }
+
             self.round += 1;
             Ok(())
         }
@@ -251,16 +414,56 @@ mod core {
                 return false;
             }
 
-            self.events.push(Event {
-                timestamp: format!("{}:00", self.round - 1),
-                description: format!(
+            self.events.push(Game::create_event(
+                format!("{}:00", self.round - 1),
+                format!(
                     "The Game has ended. The final score is B {} - R {}.",
                     self.goals[team_name::B],
                     self.goals[team_name::R]
                 ),
-            });
-
+            ));
             true
+        }
+
+        fn create_event(timestamp: String, description: String) -> Event {
+            Event {
+                timestamp,
+                description,
+            }
+        }
+
+        fn distance_between_players(p1: &Player, p2: &Player) -> u8 {
+            let player_diff_on_x = p1.pos_x_axis as i8 - p2.pos_x_axis as i8;
+            let player_diff_on_y = p1.pos_y_axis as i8 - p2.pos_y_axis as i8;
+            (player_diff_on_x.abs() + player_diff_on_y.abs()) as u8
+        }
+
+        fn is_pass_interrupted(distance_to_target: u8) -> bool {
+            if distance_to_target < 2 {
+                return false;
+            }
+
+            let mut rng = rand::thread_rng();
+            let r: f32 = rng.gen_range(0.0..1.0);
+            let interruption_probability = 0.20;
+            if distance_to_target == 2 && r <= interruption_probability {
+                return true;
+            }
+            r < f32::max(
+                interruption_probability - (0.1 * distance_to_target as f32),
+                0.0,
+            )
+        }
+
+        fn does_shot_get_to_goal(distance_to_goal: u8) -> bool {
+            if distance_to_goal == 0 {
+                return true;
+            }
+
+            let mut rng = rand::thread_rng();
+            let r: f32 = rng.gen_range(0.0..1.0);
+            let probability = f32::min(0.366 * (distance_to_goal as f32 - 1.0), 0.95);
+            probability < r
         }
     }
 }
@@ -290,7 +493,7 @@ mod ui {
 
     pub fn print_field(game: &core::Game) {
         let parse_player_text = |player: &str| -> String {
-            let postfix = match player == &game.player_with_ball {
+            let postfix = match player == &game.name_of_player_with_ball {
                 true => "*",
                 _ => " ",
             };
