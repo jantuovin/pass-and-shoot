@@ -64,117 +64,86 @@ mod core {
     impl Game {
         pub fn new() -> Game {
             let mut players = HashMap::new();
+            let mut insert_player = |p: Player| {
+                players.insert(p.name.clone(), p);
+            };
+
             // Red team
-            players.insert(
+            insert_player(Player::parse(
                 player_name::R_GK.to_string(),
-                Player::parse(
-                    player_name::R_GK.to_string(),
-                    team_name::R.to_string(),
-                    1,
-                    0,
-                ),
-            );
-            players.insert(
+                team_name::R.to_string(),
+                1,
+                0,
+            ));
+
+            insert_player(Player::parse(
                 player_name::R_RD.to_string(),
-                Player::parse(
-                    player_name::R_RD.to_string(),
-                    team_name::R.to_string(),
-                    0,
-                    1,
-                ),
-            );
-            players.insert(
+                team_name::R.to_string(),
+                0,
+                1,
+            ));
+            insert_player(Player::parse(
                 player_name::R_LD.to_string(),
-                Player::parse(
-                    player_name::R_LD.to_string(),
-                    team_name::R.to_string(),
-                    2,
-                    1,
-                ),
-            );
-            players.insert(
+                team_name::R.to_string(),
+                2,
+                1,
+            ));
+            insert_player(Player::parse(
                 player_name::R_MF.to_string(),
-                Player::parse(
-                    player_name::R_MF.to_string(),
-                    team_name::R.to_string(),
-                    1,
-                    3,
-                ),
-            );
-            players.insert(
+                team_name::R.to_string(),
+                1,
+                3,
+            ));
+            insert_player(Player::parse(
                 player_name::R_RF.to_string(),
-                Player::parse(
-                    player_name::R_RF.to_string(),
-                    team_name::R.to_string(),
-                    0,
-                    5,
-                ),
-            );
-            players.insert(
+                team_name::R.to_string(),
+                0,
+                5,
+            ));
+            insert_player(Player::parse(
                 player_name::R_LF.to_string(),
-                Player::parse(
-                    player_name::R_LF.to_string(),
-                    team_name::R.to_string(),
-                    2,
-                    5,
-                ),
-            );
+                team_name::R.to_string(),
+                2,
+                5,
+            ));
 
             // Blue team
-            players.insert(
+            insert_player(Player::parse(
                 player_name::B_GK.to_string(),
-                Player::parse(
-                    player_name::B_GK.to_string(),
-                    team_name::B.to_string(),
-                    1,
-                    7,
-                ),
-            );
-            players.insert(
+                team_name::B.to_string(),
+                1,
+                7,
+            ));
+            insert_player(Player::parse(
                 player_name::B_LD.to_string(),
-                Player::parse(
-                    player_name::B_LD.to_string(),
-                    team_name::B.to_string(),
-                    0,
-                    6,
-                ),
-            );
-            players.insert(
+                team_name::B.to_string(),
+                0,
+                6,
+            ));
+            insert_player(Player::parse(
                 player_name::B_RD.to_string(),
-                Player::parse(
-                    player_name::B_RD.to_string(),
-                    team_name::B.to_string(),
-                    2,
-                    6,
-                ),
-            );
-            players.insert(
+                team_name::B.to_string(),
+                2,
+                6,
+            ));
+            insert_player(Player::parse(
                 player_name::B_MF.to_string(),
-                Player::parse(
-                    player_name::B_MF.to_string(),
-                    team_name::B.to_string(),
-                    1,
-                    4,
-                ),
-            );
-            players.insert(
+                team_name::B.to_string(),
+                1,
+                4,
+            ));
+            insert_player(Player::parse(
                 player_name::B_LF.to_string(),
-                Player::parse(
-                    player_name::B_LF.to_string(),
-                    team_name::B.to_string(),
-                    0,
-                    2,
-                ),
-            );
-            players.insert(
+                team_name::B.to_string(),
+                0,
+                2,
+            ));
+            insert_player(Player::parse(
                 player_name::B_RF.to_string(),
-                Player::parse(
-                    player_name::B_RF.to_string(),
-                    team_name::B.to_string(),
-                    2,
-                    2,
-                ),
-            );
+                team_name::B.to_string(),
+                2,
+                2,
+            ));
 
             let mut goals = HashMap::new();
             goals.insert(team_name::R.to_string(), 0);
