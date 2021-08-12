@@ -2,106 +2,14 @@ fn main() {
     crate::game_play::run();
 }
 
-mod game_play {
-    use crate::core;
-    use crate::ui;
-
-    #[derive(Debug)]
-    enum Command {
-        New,
-        Pass,
-        Shoot,
-        Field,
-        Info,
-        Events,
-        Quit,
-        Help,
-    }
-
-    #[derive(Debug)]
-    struct UserAction {
-        pub command: Command,
-        pub argument: Option<String>,
-    }
-
-    impl UserAction {
-        fn parse(input: &String) -> UserAction {
-            let input_split = input.split(" ");
-            let parts: Vec<&str> = input_split.collect();
-
-            if parts.len() == 0 {
-                return UserAction {
-                    command: Command::Help,
-                    argument: None,
-                };
-            }
-
-            let command = match parts[0].trim() {
-                "new" => Command::New,
-                "pass" => Command::Pass,
-                "shoot" => Command::Shoot,
-                "field" => Command::Field,
-                "info" => Command::Info,
-                "events" => Command::Events,
-                "quit" => Command::Quit,
-                _ => Command::Help,
-            };
-
-            let argument = match parts.len() {
-                2 => Some(String::from(parts[1].trim())),
-                _ => None,
-            };
-
-            UserAction { command, argument }
-        }
-    }
-
-    pub fn run() {
-        let mut game = core::Game::new();
-
-        ui::print_start_screen();
-        ui::print_help();
-        ui::print_field_and_latest_events(&game);
-
-        loop {
-            let input = ui::read_user_input();
-            let action = UserAction::parse(&input);
-
-            match action.command {
-                Command::New => {
-                    game = core::Game::new();
-                    ui::print_field_and_latest_events(&game);
-                }
-                Command::Pass => match game.pass_ball_to(&action.argument) {
-                    Ok(()) => {
-                        ui::print_field_and_latest_events(&game);
-                    }
-                    _ => ui::print_help(),
-                },
-                Command::Shoot => match game.shoot_ball_to(&action.argument) {
-                    Ok(()) => {
-                        ui::print_field_and_latest_events(&game);
-                    }
-                    _ => ui::print_help(),
-                },
-                Command::Field => ui::print_field(&game),
-                Command::Info => ui::print_player_info(),
-                Command::Events => ui::print_events(&game.events, &action.argument),
-                Command::Quit => break,
-                _ => ui::print_help(),
-            }
-
-            if game.has_ended() {
-                ui::print_events(&game.events, &Some("5".to_string()));
-                break;
-            }
-        }
-    }
-}
-
 mod core {
     use rand::Rng;
     use std::collections::HashMap;
+
+    pub mod team_name {
+        pub const R: &str = "R";
+        pub const B: &str = "B";
+    }
 
     pub mod player_name {
         pub const R_GK: &str = "R_GK";
@@ -116,11 +24,6 @@ mod core {
         pub const B_MF: &str = "B_MF";
         pub const B_LF: &str = "B_LF";
         pub const B_RF: &str = "B_RF";
-    }
-
-    mod team_name {
-        pub const R: &str = "R";
-        pub const B: &str = "B";
     }
 
     #[derive(Debug)]
@@ -155,6 +58,7 @@ mod core {
         pub name_of_player_with_ball: String,
         pub events: Vec<Event>,
         pub round: u8,
+        pub total_rounds: u8,
     }
 
     impl Game {
@@ -182,7 +86,7 @@ mod core {
             players.insert(
                 player_name::R_LD.to_string(),
                 Player::parse(
-                    player_name::R_RD.to_string(),
+                    player_name::R_LD.to_string(),
                     team_name::R.to_string(),
                     2,
                     1,
@@ -191,7 +95,7 @@ mod core {
             players.insert(
                 player_name::R_MF.to_string(),
                 Player::parse(
-                    player_name::R_RD.to_string(),
+                    player_name::R_MF.to_string(),
                     team_name::R.to_string(),
                     1,
                     3,
@@ -200,7 +104,7 @@ mod core {
             players.insert(
                 player_name::R_RF.to_string(),
                 Player::parse(
-                    player_name::R_RD.to_string(),
+                    player_name::R_RF.to_string(),
                     team_name::R.to_string(),
                     0,
                     5,
@@ -209,7 +113,7 @@ mod core {
             players.insert(
                 player_name::R_LF.to_string(),
                 Player::parse(
-                    player_name::R_RD.to_string(),
+                    player_name::R_LF.to_string(),
                     team_name::R.to_string(),
                     2,
                     5,
@@ -287,6 +191,14 @@ mod core {
                 name_of_player_with_ball: player_name::B_GK.to_string(),
                 events,
                 round: 1,
+                total_rounds: 10,
+            }
+        }
+
+        pub fn which_team_has_ball(&self) -> Option<&String> {
+            match self.players.get(&self.name_of_player_with_ball) {
+                Some(p) => Some(&p.team),
+                _ => None,
             }
         }
 
@@ -325,22 +237,25 @@ mod core {
             }
 
             match interrupting_player {
+                Some(p) => {
+                    self.events.push(Game::create_event(
+                        format!("{}:00", self.round),
+                        format!(
+                            "{} tries to pass ball to {} but {} interrupts the pass.",
+                            passing_player.name, receiving_player.name, p.name
+                        ),
+                    ));
+                    self.name_of_player_with_ball = p.name.clone();
+                }
                 None => {
                     self.events.push(Game::create_event(
                         format!("{}:00", self.round),
                         format!(
                             "{} passes the ball to {}.",
-                            self.name_of_player_with_ball, receiving_player_name
+                            self.name_of_player_with_ball, receiving_player.name
                         ),
                     ));
-                    self.name_of_player_with_ball = receiving_player_name;
-                }
-                Some(p) => {
-                    self.events.push(Game::create_event(
-                        format!("{}:00", self.round),
-                        format!("{} interrupts the pass.", p.name),
-                    ));
-                    self.name_of_player_with_ball = p.name.clone();
+                    self.name_of_player_with_ball = receiving_player.name.clone();
                 }
             }
 
@@ -348,9 +263,9 @@ mod core {
             Ok(())
         }
 
-        pub fn shoot_ball_to(&mut self, teams_goal: &Option<String>) -> Result<(), String> {
-            let team_name = match teams_goal {
-                Some(p) => p.to_string(),
+        pub fn shoot_ball_to(&mut self, team_goal: &Option<String>) -> Result<(), String> {
+            let team_name = match team_goal {
+                Some(t) => t.to_string(),
                 _ => return Err("Team argument not found".to_string()),
             };
 
@@ -365,14 +280,14 @@ mod core {
                 _ => return Err("Team name not valid".to_string()),
             };
 
-            let team_goalkeeper = match self.players.get(goalkeeper_name) {
+            let goalkeeper = match self.players.get(goalkeeper_name) {
                 Some(gk) => gk,
                 _ => return Err("Goalkeeper not found".to_string()),
             };
 
             if Game::does_shot_get_to_goal(Game::distance_between_players(
                 &shooting_player,
-                &team_goalkeeper,
+                &goalkeeper,
             )) {
                 match team_name.as_str() {
                     team_name::R => *self.goals.get_mut(team_name::B).unwrap() += 1,
@@ -382,7 +297,7 @@ mod core {
                 self.events.push(Game::create_event(
                     format!("{}:00", self.round),
                     format!(
-                        "{} scores! The Situation is B {} - R {}.",
+                        "{} shoots and scores! The Situation is B {} - R {}.",
                         self.name_of_player_with_ball,
                         self.goals[team_name::B],
                         self.goals[team_name::R]
@@ -392,7 +307,7 @@ mod core {
                 self.events.push(Game::create_event(
                     format!("{}:00", self.round),
                     format!(
-                        "{} fails to score. The Situation is still B {} - R {}.",
+                        "{} shoots but fails to score. The Situation is still B {} - R {}.",
                         self.name_of_player_with_ball,
                         self.goals[team_name::B],
                         self.goals[team_name::R]
@@ -410,7 +325,7 @@ mod core {
         }
 
         pub fn has_ended(&mut self) -> bool {
-            if self.round <= 10 {
+            if self.round <= self.total_rounds {
                 return false;
             }
 
@@ -443,8 +358,7 @@ mod core {
                 return false;
             }
 
-            let mut rng = rand::thread_rng();
-            let r: f32 = rng.gen_range(0.0..1.0);
+            let r: f32 = rand::thread_rng().gen_range(0.0..1.0);
             let interruption_probability = 0.20;
             if distance_to_target == 2 && r <= interruption_probability {
                 return true;
@@ -460,10 +374,103 @@ mod core {
                 return true;
             }
 
-            let mut rng = rand::thread_rng();
-            let r: f32 = rng.gen_range(0.0..1.0);
+            let r: f32 = rand::thread_rng().gen_range(0.0..1.0);
             let probability = f32::min(0.366 * (distance_to_goal as f32 - 1.0), 0.95);
             probability < r
+        }
+    }
+}
+
+mod game_play {
+    use crate::computer_player;
+    use crate::core;
+    use crate::ui;
+
+    pub mod allowed_command {
+        pub const NEW: &str = "new";
+        pub const PASS: &str = "pass";
+        pub const SHOOT: &str = "shoot";
+        pub const FIELD: &str = "field";
+        pub const INFO: &str = "info";
+        pub const EVENTS: &str = "events";
+        pub const QUIT: &str = "quit";
+        pub const HELP: &str = "help";
+    }
+
+    #[derive(Debug)]
+    struct Action {
+        pub command: String,
+        pub argument: Option<String>,
+    }
+
+    impl Action {
+        fn parse(input: &String) -> Action {
+            let input_split = input.split(" ");
+            let parts: Vec<&str> = input_split.collect();
+
+            if parts.len() == 0 {
+                return Action {
+                    command: String::from(allowed_command::HELP),
+                    argument: None,
+                };
+            }
+
+            let command = String::from(parts[0].trim());
+            let argument = match parts.len() {
+                2 => Some(String::from(parts[1].trim())),
+                _ => None,
+            };
+            Action { command, argument }
+        }
+    }
+
+    pub fn run() {
+        let mut game = core::Game::new();
+
+        ui::print_start_screen();
+        ui::print_help();
+        ui::print_field_and_latest_events(&game);
+
+        loop {
+            let action = match game.which_team_has_ball() {
+                Some(t) => match t.as_str() {
+                    core::team_name::B => Action::parse(&ui::read_input()),
+                    _ => Action::parse(&computer_player::read_input(&game)),
+                },
+                None => Action {
+                    command: String::from(allowed_command::HELP),
+                    argument: None,
+                },
+            };
+
+            match action.command.as_str() {
+                allowed_command::NEW => {
+                    game = core::Game::new();
+                    ui::print_field_and_latest_events(&game);
+                }
+                allowed_command::PASS => match game.pass_ball_to(&action.argument) {
+                    Ok(()) => {
+                        ui::print_field_and_latest_events(&game);
+                    }
+                    _ => ui::print_help(),
+                },
+                allowed_command::SHOOT => match game.shoot_ball_to(&action.argument) {
+                    Ok(()) => {
+                        ui::print_field_and_latest_events(&game);
+                    }
+                    _ => ui::print_help(),
+                },
+                allowed_command::FIELD => ui::print_field(&game),
+                allowed_command::INFO => ui::print_player_info(),
+                allowed_command::EVENTS => ui::print_events(&game.events, &action.argument),
+                allowed_command::QUIT => break,
+                _ => ui::print_help(),
+            }
+
+            if game.has_ended() {
+                ui::print_events(&game.events, &Some(String::from("5")));
+                break;
+            }
         }
     }
 }
@@ -502,19 +509,6 @@ mod ui {
             text
         };
 
-        let red_gk = parse_player_text(core::player_name::R_GK);
-        let red_rd = parse_player_text(core::player_name::R_RD);
-        let red_ld = parse_player_text(core::player_name::R_LD);
-        let blue_lf = parse_player_text(core::player_name::B_LF);
-        let blue_rf = parse_player_text(core::player_name::B_RF);
-        let red_mf = parse_player_text(core::player_name::R_MF);
-        let blue_mf = parse_player_text(core::player_name::B_MF);
-        let red_rf = parse_player_text(core::player_name::R_RF);
-        let red_lf = parse_player_text(core::player_name::R_LF);
-        let blue_ld = parse_player_text(core::player_name::B_LD);
-        let blue_rd = parse_player_text(core::player_name::B_RD);
-        let blue_gk = parse_player_text(core::player_name::B_GK);
-
         println!(
             "\n\
         ___________        ___________\n\
@@ -535,18 +529,18 @@ mod ui {
        |       {}       {}      |\n\
        |                              |\n\
        |___________  {} ___________|",
-            red_gk,
-            red_rd,
-            red_ld,
-            blue_lf,
-            blue_rf,
-            red_mf,
-            blue_mf,
-            red_rf,
-            red_lf,
-            blue_ld,
-            blue_rd,
-            blue_gk
+            parse_player_text(core::player_name::R_GK),
+            parse_player_text(core::player_name::R_RD),
+            parse_player_text(core::player_name::R_LD),
+            parse_player_text(core::player_name::B_LF),
+            parse_player_text(core::player_name::B_RF),
+            parse_player_text(core::player_name::R_MF),
+            parse_player_text(core::player_name::B_MF),
+            parse_player_text(core::player_name::R_RF),
+            parse_player_text(core::player_name::R_LF),
+            parse_player_text(core::player_name::B_LD),
+            parse_player_text(core::player_name::B_RD),
+            parse_player_text(core::player_name::B_GK),
         );
     }
 
@@ -572,11 +566,11 @@ mod ui {
     }
 
     pub fn print_field_and_latest_events(game: &core::Game) {
-        print_field(game);
         print_events(&game.events, &Some("5".to_string()));
+        print_field(game);
     }
 
-    pub fn read_user_input() -> String {
+    pub fn read_input() -> String {
         print!("\nEnter command: ");
         let _ = io::stdout().flush();
 
@@ -584,7 +578,55 @@ mod ui {
         io::stdin()
             .read_line(&mut input)
             .expect("Failed to read line");
-
         input
+    }
+}
+
+mod computer_player {
+    use crate::core;
+    use crate::game_play;
+    use rand::Rng;
+    use std::{thread, time};
+
+    pub fn read_input(game: &core::Game) -> String {
+        thread::sleep(time::Duration::from_millis(1000));
+
+        let player_with_ball = match game.players.get(&game.name_of_player_with_ball) {
+            Some(p) => p,
+            _ => return String::from(game_play::allowed_command::QUIT),
+        };
+
+        let possible_team_mates_to_pass: Vec<&core::Player> = game
+            .players
+            .values()
+            .filter(|p| p.team == player_with_ball.team)
+            .filter(|p| match p.team.as_str() {
+                core::team_name::R => player_with_ball.pos_y_axis < p.pos_y_axis,
+                _ => p.pos_y_axis < player_with_ball.pos_y_axis,
+            })
+            .collect();
+
+        if possible_team_mates_to_pass.len() > 0 && (game.round / game.total_rounds) as f32 <= 0.90
+        {
+            let i = rand::thread_rng().gen_range(0..(possible_team_mates_to_pass.len() - 1));
+            return format!(
+                "{} {}",
+                game_play::allowed_command::PASS,
+                possible_team_mates_to_pass[i].name
+            );
+        }
+
+        match player_with_ball.team.as_str() {
+            core::team_name::R => format!(
+                "{} {}",
+                game_play::allowed_command::SHOOT,
+                core::team_name::B
+            ),
+            _ => format!(
+                "{} {}",
+                game_play::allowed_command::SHOOT,
+                core::team_name::R
+            ),
+        }
     }
 }
