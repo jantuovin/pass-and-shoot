@@ -302,7 +302,9 @@ impl Game {
         ));
         true
     }
+}
 
+impl Game {
     fn create_event(timestamp: String, description: String) -> Event {
         Event {
             timestamp,
